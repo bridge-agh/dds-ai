@@ -1,16 +1,3 @@
-/*
-   DDS, a bridge double dummy solver.
-
-   Copyright (C) 2006-2014 by Bo Haglund /
-   2014-2016 by Bo Haglund & Soren Hein.
-
-   See LICENSE and README.
-*/
-
-
-// Test program for the SolveBoardPBN function.
-// Uses the hands pre-set in hands.cpp.
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,11 +5,10 @@
 #include "hands.h"
 
 
-int main()
+int main(int argc, char **argv)
 {
   dealPBN dlPBN;
-  futureTricks fut2, // solutions == 2
-                fut3; // solutions == 3
+  futureTricks fut3;
 
   int target;
   int solutions;
@@ -30,62 +16,75 @@ int main()
   int threadIndex = 0;
   int res;
   char line[80];
-  bool match2,
-                match3;
+
+  if (argc != 4)
+  {
+    printf("Usage: SolveBoardPBN TRUMP FIRST PBN\n");
+    return 1;
+  }
+
+  const char *pbn_in = argv[3];
+  int trump_in, first_in;
+
+  if (!strcmp(argv[1], "S"))
+    trump_in = 0;
+  else if (!strcmp(argv[1], "H"))
+    trump_in = 1;
+  else if (!strcmp(argv[1], "D"))
+    trump_in = 2;
+  else if (!strcmp(argv[1], "C"))
+    trump_in = 3;
+  else if (!strcmp(argv[1], "N"))
+    trump_in = 4;
+  else
+  {
+    printf("ERR\nInvalid trump\n");
+    return 1;
+  }
+
+  if (!strcmp(argv[2], "N"))
+    first_in = 0;
+  else if (!strcmp(argv[2], "E"))
+    first_in = 1;
+  else if (!strcmp(argv[2], "S"))
+    first_in = 2;
+  else if (!strcmp(argv[2], "W"))
+    first_in = 3;
+  else
+  {
+    printf("ERR\nInvalid first\n");
+    return 1;
+  }
 
 #if defined(__linux) || defined(__APPLE__)
   SetMaxThreads(0);
 #endif
 
-  for (int handno = 0; handno < 3; handno++)
+  dlPBN.trump = trump_in;
+  dlPBN.first = first_in;
+
+  dlPBN.currentTrickSuit[0] = 0;
+  dlPBN.currentTrickSuit[1] = 0;
+  dlPBN.currentTrickSuit[2] = 0;
+
+  dlPBN.currentTrickRank[0] = 0;
+  dlPBN.currentTrickRank[1] = 0;
+  dlPBN.currentTrickRank[2] = 0;
+
+  strcpy(dlPBN.remainCards, pbn_in);
+
+  target = -1;
+  solutions = 3;
+  mode = 0;
+  res = SolveBoardPBN(dlPBN, target, solutions, mode, &fut3, 0);
+
+  if (res != RETURN_NO_FAULT)
   {
-    dlPBN.trump = trump[handno];
-    dlPBN.first = first[handno];
-
-    dlPBN.currentTrickSuit[0] = 0;
-    dlPBN.currentTrickSuit[1] = 0;
-    dlPBN.currentTrickSuit[2] = 0;
-
-    dlPBN.currentTrickRank[0] = 0;
-    dlPBN.currentTrickRank[1] = 0;
-    dlPBN.currentTrickRank[2] = 0;
-
-    strcpy(dlPBN.remainCards, PBN[handno]);
-
-    target = -1;
-    solutions = 3;
-    mode = 0;
-    res = SolveBoardPBN(dlPBN, target, solutions, mode, &fut3, 0);
-
-    if (res != RETURN_NO_FAULT)
-    {
-      ErrorMessage(res, line);
-      printf("DDS error: %s\n", line);
-    }
-
-    match3 = CompareFut(&fut3, handno, solutions);
-
-    solutions = 2;
-    res = SolveBoardPBN(dlPBN, target, solutions, mode, &fut2, 0);
-    if (res != RETURN_NO_FAULT)
-    {
-      ErrorMessage(res, line);
-      printf("DDS error: %s\n", line);
-    }
-
-    match2 = CompareFut(&fut2, handno, solutions);
-
-    sprintf(line,
-            "SolveBoardPBN, hand %d: solutions 3 %s, solutions 2 %s\n",
-            handno + 1,
-            (match3 ? "OK" : "ERROR"),
-            (match2 ? "OK" : "ERROR"));
-
-    PrintPBNHand(line, dlPBN.remainCards);
-
-    sprintf(line, "solutions == 3\n");
+    printf("ERR\n");
+  }
+  else
+  {
+    printf("OK\n");
     PrintFut(line, &fut3);
-    sprintf(line, "solutions == 2\n");
-    PrintFut(line, &fut2);
   }
 }
